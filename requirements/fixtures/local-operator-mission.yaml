@@ -1,0 +1,49 @@
+# mission.yaml — local operator fixture
+# Use: asf mission create --file requirements/fixtures/local-operator-mission.yaml
+#
+# Validates against requirements/schemas/mission.v1.json
+# Acceptance oracle: requirements/fixtures/reference-crm-mission.md
+
+id: m-crm-local
+goal: "Build a CRM for small businesses"
+
+constraints:
+  stack:
+    - typescript
+    - bun
+    - react
+  deployment: cloudflare
+  database: d1
+  auth: better-auth
+  environment: staging
+  maxRetries: 3
+  retryBackoffMs: [0, 30000, 120000]
+  verification:
+    requireAuth: true
+    primaryResource: contacts
+    healthPath: /api/health
+    allowedHosts:
+      - "*.workers.dev"
+      - "*.pages.dev"
+
+# Contract versions pinned at mission start (agent-contracts.md §13)
+contractVersions:
+  requirement-discovery: "1.0.0"
+  research: "1.0.0"
+  architect: "1.0.0"
+  planner: "1.0.0"
+  infra-engineer: "1.0.0"
+  backend-engineer: "1.0.0"
+  frontend-engineer: "1.0.0"
+  testing: "1.0.0"
+  fix: "1.0.0"
+  deployment: "1.0.0"
+  verification: "1.0.0"
+
+# Optional operator notes (not consumed by engine)
+metadata:
+  fixture: local-operator-mission
+  description: >
+    Minimal mission file for local CLI workflow: asf server start →
+    mission create → mission start → mission watch. Produces the same
+    bootstrap DAG and CRM implementation path as reference-crm-mission.

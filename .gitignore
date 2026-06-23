@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# ASF local state
+.asf-local/
+.asf/
+
+# SQLite / local DBs
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Mission workspaces (provisioned at runtime)
+workspaces/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Build / cache
+dist/
+.turbo/
+*.log

@@ -1,0 +1,74 @@
+{
+  "missionId": "m-crm-ref",
+  "version": "1.0",
+  "epics": [
+    { "id": "epic-contacts", "title": "Contact Management" }
+  ],
+  "tasks": [
+    {
+      "id": "t-setup",
+      "type": "setup-repo",
+      "title": "Initialize Bun monorepo",
+      "assignedAgentType": "infra-engineer",
+      "dependencies": [],
+      "acceptanceCriteria": ["bun install succeeds"]
+    },
+    {
+      "id": "t-schema",
+      "type": "schema-migration",
+      "title": "Create D1 schema",
+      "assignedAgentType": "backend-engineer",
+      "dependencies": ["t-setup"],
+      "acceptanceCriteria": ["Migration applies cleanly"]
+    },
+    {
+      "id": "t-contacts-api",
+      "type": "implement-backend",
+      "title": "Implement /api/contacts CRUD",
+      "assignedAgentType": "backend-engineer",
+      "dependencies": ["t-schema"],
+      "parallelSafe": false,
+      "acceptanceCriteria": ["OpenAPI contract satisfied"]
+    },
+    {
+      "id": "t-contacts-ui",
+      "type": "implement-frontend",
+      "title": "Implement contacts UI",
+      "assignedAgentType": "frontend-engineer",
+      "dependencies": ["t-schema"],
+      "acceptanceCriteria": ["Contacts list and form render"]
+    },
+    {
+      "id": "t-tests",
+      "type": "write-tests",
+      "title": "Unit and integration tests",
+      "assignedAgentType": "testing",
+      "dependencies": ["t-contacts-api", "t-contacts-ui"],
+      "acceptanceCriteria": ["bun test passes"]
+    },
+    {
+      "id": "t-browser",
+      "type": "browser-test",
+      "title": "Browser E2E tests",
+      "assignedAgentType": "testing",
+      "dependencies": ["t-tests"],
+      "acceptanceCriteria": ["E2E contact flow passes"]
+    },
+    {
+      "id": "t-deploy",
+      "type": "deploy",
+      "title": "Deploy to Cloudflare staging",
+      "assignedAgentType": "deployment",
+      "dependencies": ["t-browser"],
+      "acceptanceCriteria": ["Staging URLs in deployment report"]
+    },
+    {
+      "id": "t-verify",
+      "type": "verify-deployment",
+      "title": "Verify staging deployment (FR-17)",
+      "assignedAgentType": "verification",
+      "dependencies": ["t-deploy"],
+      "acceptanceCriteria": ["All FR-17 checks passed", "Smoke data cleaned up"]
+    }
+  ]
+}

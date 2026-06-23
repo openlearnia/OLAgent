@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://asf.local/schemas/failure-report.v1.json",
+  "title": "FailureReport",
+  "type": "object",
+  "required": ["id", "taskId", "taskExecutionId", "missionId", "domain", "classification", "message", "recoverable", "timestamp"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^fail-[0-9a-f-]{36}$" },
+    "taskId": { "type": "string" },
+    "taskExecutionId": { "type": "string" },
+    "missionId": { "type": "string" },
+    "domain": { "type": "string", "enum": ["build", "test", "deploy", "runtime", "verification"] },
+    "classification": { "type": "string" },
+    "message": { "type": "string" },
+    "recoverable": { "type": "boolean" },
+    "reportPath": { "type": "string" },
+    "stackTrace": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" }
+  }
+}

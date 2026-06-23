@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://asf.local/schemas/verification-report.v1.json",
+  "title": "VerificationReport",
+  "type": "object",
+  "required": ["status", "checks", "verifiedAt"],
+  "properties": {
+    "missionId": { "type": "string" },
+    "deployTaskId": { "type": "string" },
+    "status": { "type": "string", "enum": ["verified", "failed"] },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "passed"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "enum": ["reachability", "api_health", "api_smoke", "ui_accessible", "auth_working"]
+          },
+          "passed": { "type": "boolean" },
+          "duration_ms": { "type": "integer" },
+          "message": { "type": "string" }
+        }
+      },
+      "minItems": 5
+    },
+    "screenshots": { "type": "array", "items": { "type": "string" } },
+    "verifiedAt": { "type": "string", "format": "date-time" }
+  }
+}

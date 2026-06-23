@@ -1,0 +1,9 @@
+{
+  "name": "olagent",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "test": "bun test packages/workflow-engine",
+    "typecheck": "bun run --filter @olagent/workflow-engine typecheck"
+  }
+}

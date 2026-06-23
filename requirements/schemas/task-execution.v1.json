@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://asf.local/schemas/task-execution.v1.json",
+  "title": "TaskExecution",
+  "type": "object",
+  "required": ["id", "taskId", "missionId", "attempt", "status", "idempotencyKey"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^te-[0-9a-f-]{36}$" },
+    "taskId": { "type": "string" },
+    "missionId": { "type": "string" },
+    "attempt": { "type": "integer", "minimum": 1 },
+    "status": {
+      "type": "string",
+      "enum": ["PENDING", "RUNNING", "WAITING", "BLOCKED", "FAILED", "SUCCESS"]
+    },
+    "agentId": { "type": "string" },
+    "acpSessionId": { "type": "string" },
+    "leaseExpiresAt": { "type": "string", "format": "date-time" },
+    "nextEligibleAt": { "type": "string", "format": "date-time" },
+    "idempotencyKey": { "type": "string" },
+    "failureReportId": { "type": "string" },
+    "result": { "$ref": "agent-result.v1.json" },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "completedAt": { "type": "string", "format": "date-time" }
+  }
+}

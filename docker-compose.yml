@@ -1,0 +1,15 @@
+# Local dev — spike uses in-process SQLite (:memory: or ./data/workflow.db).
+# This compose file is optional; mount a volume if you persist state outside the app.
+services:
+  workflow-engine:
+    image: oven/bun:1.2
+    working_dir: /app
+    volumes:
+      - .:/app
+      - sqlite-data:/app/data
+    command: bun test packages/workflow-engine
+    environment:
+      WORKFLOW_DB_PATH: /app/data/workflow.db
+
+volumes:
+  sqlite-data:

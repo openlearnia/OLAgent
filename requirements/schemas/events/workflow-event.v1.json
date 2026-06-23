@@ -1,0 +1,261 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://asf.local/schemas/events/workflow-event.v1.json",
+  "title": "WorkflowEvent",
+  "oneOf": [
+    { "$ref": "#/$defs/missionCreated" },
+    { "$ref": "#/$defs/missionStarted" },
+    { "$ref": "#/$defs/taskScheduled" },
+    { "$ref": "#/$defs/taskStarted" },
+    { "$ref": "#/$defs/taskCompleted" },
+    { "$ref": "#/$defs/taskFailed" },
+    { "$ref": "#/$defs/taskBlocked" },
+    { "$ref": "#/$defs/failureDetected" },
+    { "$ref": "#/$defs/healingIterationStarted" },
+    { "$ref": "#/$defs/healingIterationCompleted" },
+    { "$ref": "#/$defs/gateCompleted" },
+    { "$ref": "#/$defs/missionProgress" },
+    { "$ref": "#/$defs/missionCompleted" },
+    { "$ref": "#/$defs/orchestratorRecovered" }
+  ],
+  "$defs": {
+    "base": {
+      "type": "object",
+      "required": ["type", "missionId", "timestamp"],
+      "properties": {
+        "type": { "type": "string" },
+        "missionId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "idempotencyKey": { "type": "string" }
+      }
+    },
+    "missionCreated": {
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        {
+          "properties": {
+            "type": { "const": "mission.created" },
+            "goal": { "type": "string" },
+            "constraints": { "type": "object" }
+          },
+          "required": ["goal"]
+        }
+      ]
+    },
+    "missionStarted": {
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        {
+          "properties": {
+            "type": { "const": "mission.started" },
+            "seedTasks": { "type": "array", "items": { "type": "string" } }
+          },
+          "required": ["seedTasks"]
+        }
+      ]
+    },
+    "taskScheduled": {
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        {
+          "properties": {
+            "type": { "const": "task.scheduled" },
+            "tasks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["taskId", "taskExecutionId", "agentType", "attempt"],
+                "properties": {
+                  "taskId": { "type": "string" },
+                  "taskExecutionId": { "type": "string" },
+                  "agentType": { "type": "string" },
+                  "attempt": { "type": "integer" }
+                }
+              }
+            },
+            "reason": { "type": "string" }
+          },
+          "required": ["tasks", "reason"]
+        }
+      ]
+    },
+    "taskStarted": {
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        {
+          "properties": {
+            "type": { "const": "task.started" },
+            "taskId": { "type": "string" },
+            "taskExecutionId": { "type": "string" },
+            "agentId": { "type": "string" },
+            "acpSessionId": { "type": "string" }
+          },
+          "required": ["taskId", "taskExecutionId", "agentId"]
+        }
+      ]
+    },
+    "taskCompleted": {
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        {
+          "properties": {
+            "type": { "const": "task.completed" },
+            "taskId": { "type": "string" },
+            "taskExecutionId": { "type": "string" },
+            "status": { "const": "SUCCESS" },
+            "artifacts": { "type": "array", "items": { "type": "string" } },
+            "commits": { "type": "array", "items": { "type": "string" } },
+            "summary": { "type": "string" }
+          },
+          "required": ["taskId", "taskExecutionId", "status", "summary"]
+        }
+      ]
+    },
+    "taskFailed": {
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        {
+          "properties": {
+            "type": { "const": "task.failed" },
+            "taskId": { "type": "string" },
+            "taskExecutionId": { "type": "string" },
+            "failureReportId": { "type": "string" },
+            "classification": { "type": "string" },
+            "recoverable": { "type": "boolean" },
+            "retryCount": { "type": "integer" },
+            "maxRetries": { "type": "integer" }
+          },
+          "required": ["taskId", "taskExecutionId", "recoverable"]
+        }
+      ]
+    },
+    "taskBlocked": {
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        {
+          "properties": {
+            "type": { "const": "task.blocked" },
+            "taskId": { "type": "string" },
+            "reason": { "type": "string" },
+            "message": { "type": "string" },
+            "suggestedActions": { "type": "array", "items": { "type": "string" } }
+          },
+          "required": ["taskId", "reason"]
+        }
+      ]
+    },
+    "failureDetected": {
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        {
+          "properties": {
+            "type": { "const": "failure.detected" },
+            "taskId": { "type": "string" },
+            "taskExecutionId": { "type": "string" },
+            "domain": { "type": "string" },
+            "classification": { "type": "string" },
+            "message": { "type": "string" },
+            "recoverable": { "type": "boolean" },
+            "reportPath": { "type": "string" }
+          },
+          "required": ["taskId", "taskExecutionId", "recoverable"]
+        }
+      ]
+    },
+    "healingIterationStarted": {
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        {
+          "properties": {
+            "type": { "const": "healing.iteration.started" },
+            "parentTaskId": { "type": "string" },
+            "iteration": { "type": "integer" },
+            "maxIterations": { "type": "integer" },
+            "childTaskIds": { "type": "array", "items": { "type": "string" } }
+          },
+          "required": ["parentTaskId", "iteration"]
+        }
+      ]
+    },
+    "healingIterationCompleted": {
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        {
+          "properties": {
+            "type": { "const": "healing.iteration.completed" },
+            "parentTaskId": { "type": "string" },
+            "iteration": { "type": "integer" },
+            "outcome": { "type": "string", "enum": ["healed", "failed"] },
+            "fixCommit": { "type": "string" },
+            "retestResult": { "type": "string", "enum": ["pass", "fail"] }
+          },
+          "required": ["parentTaskId", "iteration", "outcome"]
+        }
+      ]
+    },
+    "gateCompleted": {
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        {
+          "properties": {
+            "type": { "const": "gate.completed" },
+            "gateId": { "type": "string" },
+            "gateType": { "type": "string", "enum": ["merge", "test", "deploy", "verify"] },
+            "parentTaskId": { "type": "string" },
+            "mergeCommit": { "type": "string" }
+          },
+          "required": ["gateId", "gateType"]
+        }
+      ]
+    },
+    "missionProgress": {
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        {
+          "properties": {
+            "type": { "const": "mission.progress" },
+            "completed": { "type": "integer" },
+            "total": { "type": "integer" },
+            "percent": { "type": "integer" }
+          },
+          "required": ["completed", "total"]
+        }
+      ]
+    },
+    "missionCompleted": {
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        {
+          "properties": {
+            "type": { "const": "mission.completed" },
+            "status": { "type": "string", "enum": ["SUCCESS", "FAILED", "BLOCKED"] },
+            "verificationReportPath": { "type": "string" }
+          },
+          "required": ["status"]
+        }
+      ]
+    },
+    "orchestratorRecovered": {
+      "allOf": [
+        { "$ref": "#/$defs/base" },
+        {
+          "properties": {
+            "type": { "const": "orchestrator.recovered" },
+            "orphanedTasks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "taskId": { "type": "string" },
+                  "taskExecutionId": { "type": "string" },
+                  "action": { "type": "string" }
+                }
+              }
+            },
+            "rescheduledMissions": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      ]
+    }
+  }
+}

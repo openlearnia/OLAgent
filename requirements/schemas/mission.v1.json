@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://asf.local/schemas/mission.v1.json",
+  "title": "Mission",
+  "type": "object",
+  "required": ["id", "goal", "status", "createdAt"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^m-[0-9a-f-]{36}$" },
+    "goal": { "type": "string", "minLength": 1 },
+    "constraints": {
+      "type": "object",
+      "properties": {
+        "stack": { "type": "array", "items": { "type": "string" } },
+        "deployment": { "type": "string", "enum": ["cloudflare", "docker"] },
+        "runtime": {
+          "type": "string",
+          "enum": ["local", "cloud"],
+          "default": "local",
+          "description": "Where the ASF platform runs. v1: local only; cloud reserved for future Cloudflare-hosted orchestrator."
+        },
+        "maxRetries": { "type": "integer", "minimum": 0, "default": 3 },
+        "retryBackoffMs": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 },
+          "default": [0, 30000, 120000]
+        },
+        "verification": { "$ref": "#/$defs/verificationConstraints" }
+      },
+      "additionalProperties": true
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PENDING", "RUNNING", "BLOCKED", "SUCCESS", "FAILED", "CANCELLED"]
+    },
+    "workspacePath": { "type": "string" },
+    "contractVersions": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "completedAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "verificationConstraints": {
+      "type": "object",
+      "properties": {
+        "requireAuth": { "type": "boolean" },
+        "primaryResource": { "type": "string" },
+        "healthPath": { "type": "string" },
+        "allowedHosts": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}
