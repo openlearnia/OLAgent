@@ -5,6 +5,20 @@
     "": {
       "name": "olagent",
     },
+    "packages/asf-cli": {
+      "name": "@olagent/asf-cli",
+      "version": "0.1.0",
+      "bin": {
+        "asf": "./src/main.ts",
+      },
+      "dependencies": {
+        "@olagent/workflow-engine": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.8.2",
+      },
+    },
     "packages/workflow-engine": {
       "name": "@olagent/workflow-engine",
       "version": "0.1.0",
@@ -18,6 +32,8 @@
     },
   },
   "packages": {
+    "@olagent/asf-cli": ["@olagent/asf-cli@workspace:packages/asf-cli"],
+
     "@olagent/workflow-engine": ["@olagent/workflow-engine@workspace:packages/workflow-engine"],
 
     "@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],

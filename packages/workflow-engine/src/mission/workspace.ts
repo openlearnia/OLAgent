@@ -8,10 +8,13 @@ export interface ProvisionWorkspaceOptions {
 }
 
 export function resolveWorkspacesRoot(): string {
-  return (
-    process.env.ASF_WORKSPACES_ROOT ??
-    path.join(process.cwd(), "workspaces")
-  );
+  if (process.env.ASF_WORKSPACES_ROOT) {
+    return process.env.ASF_WORKSPACES_ROOT;
+  }
+  if (process.env.ASF_HOME) {
+    return path.join(process.env.ASF_HOME, "workspaces");
+  }
+  return path.join(process.cwd(), "workspaces");
 }
 
 export async function provisionMissionWorkspace(

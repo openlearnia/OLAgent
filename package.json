@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": ["packages/*"],
   "scripts": {
-    "test": "bun test packages/workflow-engine",
-    "typecheck": "bun run --filter @olagent/workflow-engine typecheck"
+    "test": "bun test packages/",
+    "typecheck": "bun run --filter '@olagent/*' typecheck",
+    "asf": "bun run packages/asf-cli/src/main.ts"
   }
 }

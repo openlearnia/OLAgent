@@ -1,15 +1,17 @@
 {
-  "name": "@olagent/workflow-engine",
+  "name": "@olagent/asf-cli",
   "version": "0.1.0",
   "type": "module",
-  "exports": "./src/index.ts",
+  "exports": "./src/main.ts",
+  "bin": {
+    "asf": "./src/main.ts"
+  },
   "scripts": {
     "test": "bun test",
-    "typecheck": "tsc --noEmit",
-    "server": "bun run src/server/main.ts"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "zod": "^3.24.2"
+    "@olagent/workflow-engine": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",
