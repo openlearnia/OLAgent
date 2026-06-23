@@ -14,6 +14,7 @@ export function engineErrorStatus(code: string): number {
     case "TASK_NOT_FOUND":
       return 404;
     case "IDEMPOTENCY_CONFLICT":
+    case "MISSION_ALREADY_EXISTS":
       return 409;
     case "INVALID_TRANSITION":
     case "INVALID_INPUT":

@@ -89,6 +89,8 @@ function rowToExecution(row: ExecutionRow): TaskExecution {
 }
 
 export class Store {
+  onEmit?: (event: WorkflowEvent) => void;
+
   constructor(private db: Database) {}
 
   insertMission(
@@ -373,6 +375,7 @@ export class Store {
         full.idempotencyKey,
         full.createdAt,
       );
+    this.onEmit?.(full);
     return full;
   }
 
@@ -444,6 +447,58 @@ export class Store {
         `INSERT INTO healing_dedup (key, mission_id, parent_task_id, created_at) VALUES (?, ?, ?, ?)`,
       )
       .run(key, missionId, parentTaskId, nowIso());
+  }
+
+  listRunningExecutions(): TaskExecution[] {
+    const rows = this.db
+      .prepare(`SELECT * FROM task_executions WHERE status = 'RUNNING'`)
+      .all() as ExecutionRow[];
+    return rows.map(rowToExecution);
+  }
+
+  failExpiredRunningLeases(nowMs: number): number {
+    const nowIso = new Date(nowMs).toISOString();
+    const rows = this.db
+      .prepare(
+        `SELECT * FROM task_executions
+         WHERE status = 'RUNNING'
+           AND lease_expires_at IS NOT NULL
+           AND lease_expires_at < ?`,
+      )
+      .all(nowIso) as ExecutionRow[];
+
+    let count = 0;
+    for (const row of rows) {
+      const execution = rowToExecution(row);
+      this.updateExecution(execution.id, {
+        status: "FAILED",
+        completedAt: nowIso,
+        result: {
+          status: "FAILED",
+          artifacts: [],
+          commits: [],
+          summary: "Lease expired before task completion",
+          error: {
+            code: "LEASE_EXPIRED",
+            message: "Task execution lease expired",
+            recoverable: true,
+          },
+        },
+      });
+      this.emitEvent({
+        type: "task.failed",
+        missionId: execution.missionId,
+        idempotencyKey: `task.failed:lease:${execution.id}`,
+        payload: {
+          taskId: execution.taskId,
+          taskExecutionId: execution.id,
+          reason: "LEASE_EXPIRED",
+          message: "Task execution lease expired",
+        },
+      });
+      count++;
+    }
+    return count;
   }
 
   transaction<T>(fn: () => T): T {

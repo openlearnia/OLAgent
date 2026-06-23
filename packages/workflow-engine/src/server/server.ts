@@ -4,9 +4,12 @@ import {
   resolveJwtSecret,
   verifyInternalJwt,
 } from "./auth.ts";
+import { startLeaseSweeper } from "../engine/sweeper.ts";
+import type { LeaseSweeperHandle } from "../engine/sweeper.ts";
 import {
   badJson,
   handleCompleteTask,
+  handleCreateMission,
   handleGetMission,
   handleGetMissionEvents,
   handleHeartbeat,
@@ -23,6 +26,9 @@ export interface WorkflowServerOptions {
   hostname?: string;
   jwtSecret?: string;
   dbPath?: string;
+  workspacesRoot?: string;
+  leaseSweeperIntervalMs?: number;
+  disableLeaseSweeper?: boolean;
 }
 
 export interface WorkflowServer {
@@ -30,6 +36,7 @@ export interface WorkflowServer {
   engine: WorkflowEngine;
   port: number;
   hostname: string;
+  sweeper: LeaseSweeperHandle;
   stop: () => void;
 }
 
@@ -47,6 +54,14 @@ export function createWorkflowServer(
 
   const jwtSecret = options.jwtSecret ?? resolveJwtSecret();
   const hostname = options.hostname ?? "127.0.0.1";
+  const workspacesRoot = options.workspacesRoot;
+
+  const sweeper = options.disableLeaseSweeper
+    ? { stop: () => {}, sweepOnce: () => 0 }
+    : startLeaseSweeper(engine, {
+        intervalMs: options.leaseSweeperIntervalMs,
+      });
+
   const server = Bun.serve({
     hostname,
     port: options.port ?? Number(process.env.PORT ?? 3100),
@@ -96,6 +111,12 @@ export function createWorkflowServer(
         return handleGetMissionEvents(engine, missionId, url);
       }
 
+      if (request.method === "POST" && path === "/v1/missions") {
+        const body = await readMissionBody(request);
+        if (body === undefined) return badJson();
+        return handleCreateMission(engine, body, { workspacesRoot });
+      }
+
       if (request.method === "GET" && path.match(/^\/v1\/missions\/[^/]+$/)) {
         const missionId = path.split("/")[3]!;
         return handleGetMission(engine, missionId);
@@ -114,8 +135,10 @@ export function createWorkflowServer(
     engine,
     port: server.port!,
     hostname,
+    sweeper,
     stop: () => {
-server.stop();
+      sweeper.stop();
+      server.stop();
     },
   };
 }
@@ -131,3 +154,21 @@ async function readJson(request: Request): Promise<unknown | undefined> {
   }
 }
 
+
+async function readMissionBody(request: Request): Promise<unknown | undefined> {
+  const contentType = request.headers.get("content-type") ?? "";
+  const text = await request.text();
+  if (!text) return {};
+  try {
+    if (
+      contentType.includes("yaml") ||
+      contentType.includes("yml") ||
+      (!contentType.includes("json") && text.trimStart().startsWith("id:"))
+    ) {
+      return Bun.YAML.parse(text) as unknown;
+    }
+    return JSON.parse(text) as unknown;
+  } catch {
+    return undefined;
+  }
+}

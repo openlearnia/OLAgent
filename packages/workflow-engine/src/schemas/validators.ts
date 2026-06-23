@@ -106,3 +106,14 @@ export function validateVerificationReport(report: unknown) {
   return VerificationReportSchema.parse(report);
 }
 
+
+export const MissionCreateInputSchema = z.object({
+  id: z.string().min(1).optional(),
+  goal: z.string().min(1).max(10_000),
+  constraints: z.record(z.unknown()).optional(),
+  idempotencyKey: z.string().min(1).optional(),
+  contractVersions: z.record(z.string()).optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
+
+export type MissionCreateInput = z.infer<typeof MissionCreateInputSchema>;

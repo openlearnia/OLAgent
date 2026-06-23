@@ -1,3 +1,4 @@
+import { ZodError } from "zod";
 import type { WorkflowEngine } from "../engine/engine.ts";
 import type {
   AgentResult,
@@ -30,6 +31,55 @@ export interface MissionProjection {
   }>;
 }
 
+
+export async function handleCreateMission(
+  engine: WorkflowEngine,
+  body: unknown,
+  options?: { workspacesRoot?: string },
+): Promise<Response> {
+  try {
+    const mission = await engine.createMissionFromDocument(body, options);
+    const projection = missionProjectionFromEngine(engine, mission.id);
+    return Response.json(projection, { status: 201 });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return jsonError(400, "INVALID_INPUT", error.message);
+    }
+    return mapEngineError(error);
+  }
+}
+
+function missionProjectionFromEngine(
+  engine: WorkflowEngine,
+  missionId: string,
+): MissionProjection {
+  const store = engine.getStore();
+  const mission = store.getMission(missionId)!;
+  const tasks = store.listTasks(missionId).map((task) => {
+    const latest = store.latestExecution(missionId, task.id);
+    return {
+      id: task.id,
+      type: task.type,
+      title: task.title,
+      kind: task.kind,
+      assignedAgentType: task.assignedAgentType,
+      status: latest?.status ?? "PENDING",
+      taskExecutionId: latest?.id,
+    };
+  });
+
+  return {
+    mission: {
+      id: mission.id,
+      goal: mission.goal,
+      status: mission.status,
+      workspacePath: mission.workspacePath,
+      createdAt: mission.createdAt,
+      completedAt: mission.completedAt,
+    },
+    tasks,
+  };
+}
 
 export async function handleStartMission(
   engine: WorkflowEngine,

@@ -28,6 +28,15 @@ import {
   newFailureReportId,
 } from "./healing.ts";
 import { assertTransition } from "./state-machine.ts";
+import { WorkflowEventBus } from "./events.ts";
+import {
+  CRM_CONSTRAINTS,
+  CRM_HEALING_TEMPLATES,
+  CRM_SEED_EDGES,
+  CRM_SEED_NODES,
+} from "../fixtures/crm-seed.ts";
+import { provisionMissionWorkspace } from "../mission/workspace.ts";
+import { MissionCreateInputSchema } from "../schemas/validators.ts";
 import { Store, createPendingExecution } from "./store.ts";
 
 const LEASE_SECONDS = 120;
@@ -36,16 +45,20 @@ export interface WorkflowEngineOptions {
   db?: Database;
   dbPath?: string;
   now?: () => number;
+  eventBus?: WorkflowEventBus;
 }
 
 export class WorkflowEngine {
   private store: Store;
   private now: () => number;
+  readonly eventBus: WorkflowEventBus;
 
   constructor(options: WorkflowEngineOptions = {}) {
     const db =
       options.db ?? createDatabase(options.dbPath ?? ":memory:");
     this.store = new Store(db);
+    this.eventBus = options.eventBus ?? new WorkflowEventBus();
+    this.store.onEmit = (event) => this.eventBus.emit(event);
     this.now = options.now ?? (() => Date.now());
   }
 
@@ -53,6 +66,82 @@ export class WorkflowEngine {
     return this.store;
   }
 
+  getNow(): number {
+    return this.now();
+  }
+
+  getEventBus(): WorkflowEventBus {
+    return this.eventBus;
+  }
+
+
+  async createMissionFromDocument(
+    input: unknown,
+    options?: { workspacesRoot?: string },
+  ): Promise<Mission> {
+    const parsed = MissionCreateInputSchema.parse(input);
+    const requestHash = hashPayload(parsed);
+
+    if (parsed.idempotencyKey) {
+      const existing = this.store.getIdempotencyRecord(parsed.idempotencyKey);
+      if (existing) {
+        if (existing.requestHash !== requestHash) {
+          throw engineError(
+            "IDEMPOTENCY_CONFLICT",
+            "Same idempotency key with different payload",
+          );
+        }
+        const prior = existing.response as { mission: Mission };
+        return prior.mission;
+      }
+    }
+
+    const missionId = parsed.id ?? newId("m-");
+    if (parsed.id && this.store.getMission(parsed.id)) {
+      throw engineError("MISSION_ALREADY_EXISTS", parsed.id);
+    }
+    const constraints = {
+      ...CRM_CONSTRAINTS,
+      ...(parsed.constraints ?? {}),
+    } as MissionConstraints;
+
+    const missionDocument = {
+      id: missionId,
+      goal: parsed.goal,
+      constraints,
+      ...(parsed.contractVersions
+        ? { contractVersions: parsed.contractVersions }
+        : {}),
+      ...(parsed.metadata ? { metadata: parsed.metadata } : {}),
+    };
+
+    const workspacePath = await provisionMissionWorkspace({
+      missionId,
+      missionDocument,
+      workspacesRoot: options?.workspacesRoot,
+    });
+
+    const mission = this.createMission({
+      id: missionId,
+      goal: parsed.goal,
+      constraints,
+      workspacePath,
+      seedNodes: CRM_SEED_NODES,
+      seedEdges: CRM_SEED_EDGES,
+      healingTemplates: CRM_HEALING_TEMPLATES,
+    });
+
+    if (parsed.idempotencyKey) {
+      this.store.saveIdempotencyRecord(
+        parsed.idempotencyKey,
+        "createMission",
+        requestHash,
+        { mission },
+      );
+    }
+
+    return mission;
+  }
 
   createMission(input: {
     id?: string;
