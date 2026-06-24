@@ -18,7 +18,8 @@ Architecture and execution contracts for the Autonomous Software Factory (ASF). 
 
 | Plan | Description |
 |------|-------------|
-| [plans/v1-implementation-plan.md](./plans/v1-implementation-plan.md) | **v1 kickoff** — milestones M0–M5, package layout, CRM E2E path |
+| [plans/v1-implementation-plan.md](./plans/v1-implementation-plan.md) | **v1 kickoff** — milestones M0–M5c, package layout, CRM E2E path |
+| [plans/cursor-acp-milestones.md](./plans/cursor-acp-milestones.md) | **Cursor ACP track** — M5a–M5c sprint breakdown |
 | [plans/README.md](./plans/README.md) | Plan index |
 
 ## Architecture Decision Records
@@ -26,7 +27,8 @@ Architecture and execution contracts for the Autonomous Software Factory (ASF). 
 | ADR | Decision |
 |-----|----------|
 | [ADR-001-local-first-topology.md](./ADR-001-local-first-topology.md) | v1 control plane = local Bun server + SQLite; Cloudflare orchestrator deferred to Phase 2 |
-| [ADR-002-cli-agent-runtime.md](./ADR-002-cli-agent-runtime.md) | v1 agents = `asf agent run` subprocess (Cursor/Claude); no Docker for agent execution |
+| [ADR-002-cli-agent-runtime.md](./ADR-002-cli-agent-runtime.md) | v1 agents = subprocess isolation (Cursor/Claude); no Docker for agent execution |
+| [ADR-003-cursor-acp-primary-backend.md](./ADR-003-cursor-acp-primary-backend.md) | v1 production backend = Cursor `agent acp` (Agent Client Protocol); ASF is ACP client |
 
 ## Relationship to Requirements
 
@@ -57,7 +59,7 @@ implementation/        ← Code (packages/workflow-engine spike)
 |--------|--------|
 | [requirements/reviews/cross-review-synthesis.md](../requirements/reviews/cross-review-synthesis.md) | P0 requirements remediation — complete |
 | [docs/reviews/cross-review-synthesis.md](./reviews/cross-review-synthesis.md) | Five-lens `docs/` review — **P0 doc fixes applied 2026-06-22** |
-| Local-first pivot ADRs | **Accepted 2026-06-22** — ADR-001, ADR-002; ADD §11 updated |
+| Local-first pivot ADRs | **Accepted** — ADR-001, ADR-002; **ADR-003** Cursor ACP backend (2026-06-24) |
 | Implementation kickoff | **Conditional GO** — schemas published; workflow-engine spike on Mac |
 
 Re-run five-lens review after Workflow Engine + CRM DAG simulation (no LLM).
@@ -70,6 +72,8 @@ Re-run five-lens review after Workflow Engine + CRM DAG simulation (no LLM).
 4. **Workflow engine on Mac** — `packages/workflow-engine` Bun server + SQLite (**M0 done**)
 5. **Operator CLI** — `packages/asf-cli` (`bun run asf`) — create → start → watch (**M1 done**)
 6. **Agent Runtime Caller** — `task.scheduled` → `asf agent run` subprocess (**M2 done**)
-7. **LLM pilot** — `backend-engineer` live agent run + heartbeat (**M3 done**)
+7. **LLM pilot** — `backend-engineer` interim custom LLM path (**M3 done**; fallback/CI per ADR-003)
 8. **MCP proxy + sandbox** — filesystem jail, tool allowlists (**M4 done**)
-9. **CRM E2E** — reference mission SUCCESS with verification ([v1 plan](./plans/v1-implementation-plan.md))
+9. **Cursor ACP client** — `packages/acp-client` (**M5a**)
+10. **Caller → `agent acp`** — production spawn (**M5b**)
+11. **CRM E2E** — reference mission SUCCESS with Cursor ([v1 plan](./plans/v1-implementation-plan.md))

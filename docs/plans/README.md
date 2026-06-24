@@ -6,7 +6,8 @@ Engineering execution plans derived from `docs/` contracts and `requirements/`. 
 
 | Plan | Status | Description |
 |------|--------|-------------|
-| [v1-implementation-plan.md](./v1-implementation-plan.md) | **Active** | Local-first, CLI-first v1 — Bun server, SQLite, `asf agent run`, CRM E2E |
+| [v1-implementation-plan.md](./v1-implementation-plan.md) | **Active** | Local-first, CLI-first v1 — Bun server, SQLite, Cursor `agent acp`, CRM E2E |
+| [cursor-acp-milestones.md](./cursor-acp-milestones.md) | **Active** | M5a–M5c — ACP client, caller wire-up, CRM E2E with Cursor |
 
 ## How plans relate to other docs
 

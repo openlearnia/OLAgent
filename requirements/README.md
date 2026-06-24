@@ -26,7 +26,8 @@ Documents follow a consistent template: **ID & Title**, **Summary**, **User/Syst
 | [docs/ADD.md](../docs/ADD.md) | Architecture Design Document |
 | [docs/workflow-dsl.md](../docs/workflow-dsl.md) | Workflow DSL specification |
 | [docs/agent-contracts.md](../docs/agent-contracts.md) | Agent Contracts v1 |
-| [docs/plans/v1-implementation-plan.md](../docs/plans/v1-implementation-plan.md) | **v1 implementation plan** — milestones M0–M5, sprint sequencing |
+| [docs/plans/v1-implementation-plan.md](../docs/plans/v1-implementation-plan.md) | **v1 implementation plan** — milestones M0–M5c, sprint sequencing |
+| [docs/ADR-003-cursor-acp-primary-backend.md](../docs/ADR-003-cursor-acp-primary-backend.md) | **Cursor ACP primary backend** — Agent Client Protocol decision |
 
 ---
 
@@ -51,7 +52,7 @@ Documents follow a consistent template: **ID & Title**, **Summary**, **User/Syst
 | FR-05 | [task-planner.md](./functional/FR-05-task-planner.md) | Decompose requirements into epics and executable tasks |
 | FR-06 | [dependency-management.md](./functional/FR-06-dependency-management.md) | Task dependency graph construction and resolution |
 | FR-07 | [agent-execution.md](./functional/FR-07-agent-execution.md) | Specialized agent types and execution orchestration |
-| FR-08 | [acp-integration.md](./functional/FR-08-acp-integration.md) | Isolated Agent Context Protocol sessions per task |
+| FR-08 | [acp-integration.md](./functional/FR-08-acp-integration.md) | Isolated **execution sessions** per task; Cursor ACP per ASF-FW-ACP |
 | FR-09 | [code-generation.md](./functional/FR-09-code-generation.md) | Source, test, and documentation generation/modification |
 | FR-10 | [git-operations.md](./functional/FR-10-git-operations.md) | Branching, commits, and merge-after-validation |
 | FR-11 | [browser-automation-framework.md](./functional/FR-11-browser-automation-framework.md) | Browser MCP primitives for UI interaction and observation |
@@ -73,6 +74,7 @@ Documents follow a consistent template: **ID & Title**, **Summary**, **User/Syst
 |----------|-------------|
 | [agent-framework.md](./framework/agent-framework.md) | Agent lifecycle, context model, and recovery semantics |
 | [cli-agent-runtime.md](./framework/cli-agent-runtime.md) | `asf` CLI commands, agent subprocess lifecycle, Workflow Engine integration |
+| [acp-cursor-integration.md](./framework/acp-cursor-integration.md) | **ASF-FW-ACP** — Cursor `agent acp` / Agent Client Protocol client adapter |
 | [process-sandbox.md](./framework/process-sandbox.md) | v1 process-per-session isolation (no Docker) |
 | [workflow-engine.md](./framework/workflow-engine.md) | Task states, scheduling, and parallel execution |
 | [mcp-integration.md](./framework/mcp-integration.md) | MCP server surface: filesystem, git, browser, memory, etc. |

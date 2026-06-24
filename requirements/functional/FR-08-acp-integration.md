@@ -1,8 +1,10 @@
-# FR-08 — ACP Integration
+# FR-08 — Execution Session Isolation
+
+> **Naming (2026-06-24):** This document describes **execution sessions** — isolated per-task agent runs (process sandbox, MCP proxy, workspace jail). **Agent Client Protocol** integration with Cursor (`agent acp`) is specified separately in [framework/acp-cursor-integration.md](../framework/acp-cursor-integration.md) and [ADR-003](../../docs/ADR-003-cursor-acp-primary-backend.md). The legacy term "ACP session" meant execution session, not the wire protocol.
 
 ## Summary
 
-Each task executes within an isolated Agent Context Protocol (ACP) session that provides sandboxed tool access, bounded context, and clean teardown — ensuring agents cannot leak state or interfere across tasks. v1 uses **process-per-session** isolation spawned via `asf agent run` ([framework/cli-agent-runtime.md](../framework/cli-agent-runtime.md), [framework/process-sandbox.md](../framework/process-sandbox.md)).
+Each task executes within an isolated **execution session** that provides sandboxed tool access, bounded context, and clean teardown — ensuring agents cannot leak state or interfere across tasks. v1 uses **process-per-session** isolation spawned by the Agent Runtime Caller ([framework/cli-agent-runtime.md](../framework/cli-agent-runtime.md), [framework/process-sandbox.md](../framework/process-sandbox.md)). Production agents run via Cursor `agent acp` (Agent Client Protocol); see ASF-FW-ACP.
 
 ## User Story
 
@@ -10,12 +12,12 @@ Each task executes within an isolated Agent Context Protocol (ACP) session that 
 
 ## System Story
 
-> As the ACP runtime, I must create a session per task assignment via CLI subprocess spawn, inject mission/task context, expose authorized MCP tools, stream execution telemetry, post `completeTask` to the Workflow Engine, and destroy the session on completion or failure.
+> As the execution session runtime, I must create a session per task assignment via subprocess spawn (Cursor `agent acp` in production, or stub/fallback paths), inject mission/task context, expose authorized MCP tools, stream execution telemetry, post `completeTask` to the Workflow Engine, and destroy the session on completion or failure.
 
 ## Requirements
 
-1. The system MUST create one ACP session per task execution attempt (including retries).
-2. **v1 isolation model (resolved):** Each session MUST run in a **dedicated OS subprocess** (process-per-session) spawned by `asf agent run`. MCP proxy enforces workspace boundaries and tool allowlists. See [framework/process-sandbox.md](../framework/process-sandbox.md). Container-per-session is Phase 2 for untrusted missions — see [framework/security.md](../framework/security.md) § Phase 2 Container Isolation.
+1. The system MUST create one **execution session** per task execution attempt (including retries).
+2. **v1 isolation model (resolved):** Each session MUST run in a **dedicated OS subprocess** spawned by the Agent Runtime Caller (`agent acp` in production per [acp-cursor-integration.md](../framework/acp-cursor-integration.md); `asf agent run` custom-LLM or stub for fallback/CI). MCP proxy enforces workspace boundaries and tool allowlists. See [framework/process-sandbox.md](../framework/process-sandbox.md). Container-per-session is Phase 2 for untrusted missions — see [framework/security.md](../framework/security.md) § Phase 2 Container Isolation.
 3. Each session MUST be scoped to:
    - Mission workspace root (read/write within boundary)
    - Authorized MCP servers per agent type (FR-07)
@@ -37,21 +39,21 @@ Each task executes within an isolated Agent Context Protocol (ACP) session that 
 9. On termination, session resources (agent subprocess, browser, terminal children) MUST be released within 60 seconds.
 10. Session ID MUST be recorded on agent instance and task execution record.
 11. Cross-session communication MUST occur only via persisted artifacts (files, memory, git) — no shared memory between concurrent sessions.
-12. Workflow Engine MUST spawn sessions by invoking `asf agent run`; agents MUST NOT self-schedule.
-13. CLI subprocess MUST post `completeTask` to Workflow Engine before exit; engine is sole task-state writer.
+12. Workflow Engine MUST spawn execution sessions by invoking the Agent Runtime Caller; agents MUST NOT self-schedule.
+13. Caller or agent subprocess MUST post `completeTask` to Workflow Engine before exit; engine is sole task-state writer.
 
 ## Inputs / Outputs / Artifacts
 
 | Direction | Name | Format |
 |-----------|------|--------|
 | Input | Task assignment + context bundle | JSON |
-| Output | `acpSessionId` | UUID string |
+| Output | `executionSessionId` (`acpSessionId` legacy) | UUID string |
 | Output | Session telemetry | JSON log stream |
 | Output | Session summary | Token count, duration, tool call count |
 
 ## Acceptance Criteria
 
-- [ ] Two concurrent tasks have distinct `acpSessionId` values and distinct OS PIDs
+- [ ] Two concurrent tasks have distinct execution session IDs and distinct OS PIDs
 - [ ] Backend session cannot write outside mission workspace (path traversal blocked at MCP proxy)
 - [ ] Session timeout terminates agent and marks task failed
 - [ ] Token usage recorded per session in monitoring
@@ -66,12 +68,13 @@ Each task executes within an isolated Agent Context Protocol (ACP) session that 
 - [framework/mcp-integration.md](../framework/mcp-integration.md)
 - [framework/cli-agent-runtime.md](../framework/cli-agent-runtime.md) — CLI spawn model
 - [framework/process-sandbox.md](../framework/process-sandbox.md) — v1 process isolation
+- [framework/acp-cursor-integration.md](../framework/acp-cursor-integration.md) — Agent Client Protocol (Cursor `agent acp`)
 - [framework/security.md](../framework/security.md) — Allowlists, vault, Phase 2 containers
 - [framework/monitoring.md](../framework/monitoring.md)
 
 ## Non-Goals
 
-- ACP protocol specification (consume existing ACP standard)
+- Defining the Agent Client Protocol specification (consume [agentclientprotocol.com](https://agentclientprotocol.com))
 - Interactive human takeover mid-session (v1)
 - Session recording playback UI (v1)
 
@@ -80,7 +83,9 @@ Each task executes within an isolated Agent Context Protocol (ACP) session that 
 1. Secret injection mechanism (Vault, env file, Cloudflare secrets) — see [framework/security.md](../framework/security.md) vault outline.
 2. Session pause/resume for long-running tasks?
 
-> **Resolved (v1):** Process-per-session isolation via `asf agent run` subprocess — see requirement 2 and [framework/process-sandbox.md](../framework/process-sandbox.md). Container-per-session deferred to Phase 2 ([framework/security.md](../framework/security.md)).
+> **Resolved (v1):** Process-per-session isolation via Agent Runtime Caller subprocess — see requirement 2 and [framework/process-sandbox.md](../framework/process-sandbox.md). Container-per-session deferred to Phase 2 ([framework/security.md](../framework/security.md)).
+
+> **Resolved (v1 production backend):** Cursor `agent acp` per [ADR-003](../../docs/ADR-003-cursor-acp-primary-backend.md) and [acp-cursor-integration.md](../framework/acp-cursor-integration.md).
 
 ## Examples
 

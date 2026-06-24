@@ -382,6 +382,35 @@ interface AgentRuntimeCaller {
 
 ---
 
+## 13. Cursor ACP backend (target)
+
+**Status:** Accepted per [ADR-003](./ADR-003-cursor-acp-primary-backend.md) — implementation M5a–M5c.
+
+v1 **production** agent execution replaces the M3 custom LLM loop with **Cursor Agent CLI** in ACP mode:
+
+| Role | Component |
+|------|-----------|
+| ACP **client** | `packages/acp-client` — JSON-RPC over stdio to child process |
+| ACP **agent** | `agent acp` on `PATH` (Cursor) |
+| Tools | Existing MCP proxy — AcpClient forwards fs/terminal/permission requests |
+
+The Agent Runtime Caller spawns `agent acp`, runs `AcpClient` on stdio (`initialize` → `session/new` → `session/prompt`), relays heartbeats, and maps session completion to `completeTask`. Permission requests are auto-approved only within MCP allowlists ([ASF-FW-ACP](../requirements/framework/acp-cursor-integration.md)).
+
+**Interim (M3):** `asf agent run` + custom LLM adapter remains for `ASF_AGENT_BACKEND=custom-llm` and CI without `CURSOR_API_KEY`. Not the production path.
+
+```mermaid
+flowchart LR
+    ARC[Agent Runtime Caller] -->|spawn| AGENT[agent acp]
+    ARC --> ACP[AcpClient]
+    AGENT <-->|JSON-RPC| ACP
+    ACP --> MCP[MCP Proxy]
+    ARC -->|heartbeat, completeTask| WE[Workflow Engine]
+```
+
+See [plans/cursor-acp-milestones.md](./plans/cursor-acp-milestones.md) for implementation sequencing.
+
+---
+
 ## Related Documents
 
 - [cli-reference.md](./cli-reference.md) — command tree, env vars, example flows
@@ -389,5 +418,7 @@ interface AgentRuntimeCaller {
 - [workflow-dsl.md](./workflow-dsl.md) — state machine, `completeTask`, `heartbeat`
 - [ADD.md](./ADD.md) — §10 Security, §12 Crash Recovery
 - [requirements/functional/FR-07-agent-execution.md](../requirements/functional/FR-07-agent-execution.md)
-- [requirements/functional/FR-08-acp-integration.md](../requirements/functional/FR-08-acp-integration.md)
+- [requirements/functional/FR-08-acp-integration.md](../requirements/functional/FR-08-acp-integration.md) — execution session isolation
+- [ADR-003](./ADR-003-cursor-acp-primary-backend.md) — Cursor ACP primary backend
+- [requirements/framework/acp-cursor-integration.md](../requirements/framework/acp-cursor-integration.md) — ASF-FW-ACP
 - [requirements/framework/security.md](../requirements/framework/security.md)

@@ -1,8 +1,10 @@
 # ASF-FW-SBX — Process Sandbox
 
+> **Naming:** **Execution session** = per-task process sandbox below. **Agent Client Protocol (ACP)** = JSON-RPC wire protocol between ASF and Cursor `agent acp` — see [acp-cursor-integration.md](./acp-cursor-integration.md). Do not conflate the two.
+
 ## Summary
 
-ASF v1 uses a **process-per-session** sandbox model for ACP isolation — no Docker containers required. Each agent task runs in a dedicated OS subprocess with workspace-scoped filesystem access, MCP-only tool surface, terminal argv allowlists, and session-scoped browser instances. This model supersedes container-per-session as the v1 default for local, single-operator deployments.
+ASF v1 uses a **process-per-session** sandbox model for **execution session** isolation — no Docker containers required. Each agent task runs in a dedicated OS subprocess with workspace-scoped filesystem access, MCP-only tool surface, terminal argv allowlists, and session-scoped browser instances. This model supersedes container-per-session as the v1 default for local, single-operator deployments.
 
 ## User Story
 
@@ -10,7 +12,7 @@ ASF v1 uses a **process-per-session** sandbox model for ACP isolation — no Doc
 
 ## System Story
 
-> As the Process Sandbox runtime, I must spawn one OS process per ACP session, enforce workspace boundaries at the MCP proxy, scope browser and terminal tools per session, inject secrets only at MCP boundaries, and tear down all child resources on session termination.
+> As the Process Sandbox runtime, I must spawn one OS process per **execution session**, enforce workspace boundaries at the MCP proxy, scope browser and terminal tools per session, inject secrets only at MCP boundaries, and tear down all child resources on session termination.
 
 ## v1 Sandbox Model (No Docker)
 
@@ -19,7 +21,7 @@ flowchart TB
     subgraph host["Operator Host (single-tenant)"]
         WE[Workflow Engine]
         CLI["asf agent run"]
-        subgraph session["ACP Session (process)"]
+        subgraph session["Execution session (process)"]
             Agent[Agent Subprocess]
             MCP[MCP Proxy]
             FS[Filesystem MCP]
