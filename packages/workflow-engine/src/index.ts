@@ -7,6 +7,16 @@ export { deriveMissionStatus } from "./engine/mission-status.ts";
 export { mergePlanIntoDag } from "./engine/planner-merge.ts";
 export { StubAgentRuntime } from "./agents/stub.ts";
 export { wireStubAgentRuntime } from "./agents/stub-caller.ts";
+export { wireAgentRuntimeCaller } from "./agents/caller.ts";
+export {
+  buildContextBundle,
+  validateContextBundle,
+  writeContextBundle,
+  ContextBundleSchema,
+} from "./agents/bundle.ts";
+export type { ContextBundle, AgentContext } from "./agents/bundle.ts";
+export { getAgentContract } from "./agents/contracts.ts";
+export { resolveAsfBinary } from "./agents/resolve-binary.ts";
 export { runCrmMission } from "./simulations/crm-mission.ts";
 export * from "./types.ts";
 export { signInternalJwt, verifyInternalJwt, extractBearerToken, resolveJwtSecret } from "./server/auth.ts";

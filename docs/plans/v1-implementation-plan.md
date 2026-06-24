@@ -58,9 +58,9 @@ setup-repo → schema-migration → [implement-backend ∥ implement-frontend] �
 | ADR-001, ADR-002 | Accepted |
 | `packages/workflow-engine` | Spike: state machine, planner merge, healing, HTTP server, **11 tests pass** |
 | `StubAgentRuntime` | In-process golden results for CRM simulation |
-| `asf` CLI | **Not implemented** — spec only |
-| Mission Manager `POST /v1/missions` | **Not implemented** — missions created in-process today |
-| Agent Runtime Caller | **Not implemented** |
+| `asf` CLI | **M1 done** — `packages/asf-cli` |
+| Mission Manager `POST /v1/missions` | **M1 done** |
+| Agent Runtime Caller | **M2 done** — subprocess `asf agent run --dry-run` |
 | MCP Proxy | **Not implemented** |
 
 ### 2.1 Engine APIs already implemented
@@ -168,9 +168,9 @@ flowchart LR
 
 | Milestone | Theme | Duration (est.) | Exit gate |
 |-----------|-------|-----------------|-----------|
-| **M0** | Engine hardening | 3–5 days | Sweeper + event bus + `POST /v1/missions` in tests |
-| **M1** | CLI + Mission Manager | 5–7 days | Operator flow: create → start → status via `asf` |
-| **M2** | Agent Runtime Caller | 4–6 days | Stub replaced by subprocess spawn (dry-run bundle) |
+| **M0** | Engine hardening | 3–5 days | ✅ Done (`4d2745d`) — sweeper, event bus, `POST /v1/missions`, 15 tests |
+| **M1** | CLI + Mission Manager | 5–7 days | ✅ Done (`e9c02c1`) — `packages/asf-cli`, create → start → watch SUCCESS |
+| **M2** | Agent Runtime Caller | 4–6 days | ✅ Done — subprocess `asf agent run --dry-run` on `task.scheduled` |
 | **M3** | `asf agent run` + LLM pilot | 7–10 days | One agent type real LLM task completes |
 | **M4** | MCP Proxy + sandbox | 7–10 days | Filesystem jail + git denylist enforced |
 | **M5** | CRM E2E + verification | 10–14 days | Reference CRM `SUCCESS` with mixed stub/real agents |

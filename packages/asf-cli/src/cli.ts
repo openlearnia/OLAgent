@@ -5,6 +5,7 @@ import { runMissionEvents } from "./commands/mission/events.ts";
 import { runMissionStart } from "./commands/mission/start.ts";
 import { runMissionStatus } from "./commands/mission/status.ts";
 import { runMissionWatch } from "./commands/mission/watch.ts";
+import { runAgentRun } from "./commands/agent/run.ts";
 import { runServerStart } from "./commands/server.ts";
 import {
   flagBool,
@@ -31,6 +32,10 @@ export async function runCli(argv: string[]): Promise<number> {
 
   if (group === "server" && sub === "start") {
     return runServerStart(config, { positional: positional.slice(2), flags });
+  }
+
+  if (group === "agent" && sub === "run") {
+    return runAgentRun(config, { positional: positional.slice(2), flags });
   }
 
   if (group === "dev" && sub === "token") {

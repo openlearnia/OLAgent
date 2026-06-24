@@ -81,6 +81,7 @@ Usage:
   asf mission watch <missionId> [--interval <seconds>] [--events]
   asf mission events <missionId> [--limit <n>]
   asf dev token [--ttl <seconds>]
+  asf agent run --bundle <path> [--dry-run]
 
 Global flags:
   --engine-url <url>   ASF_ENGINE_URL (default http://127.0.0.1:3100)

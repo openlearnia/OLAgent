@@ -2,10 +2,11 @@ import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import {
   createWorkflowServer,
+  wireAgentRuntimeCaller,
   wireStubAgentRuntime,
 } from "@olagent/workflow-engine";
 import type { CliConfig } from "../config.ts";
-import { logDebug } from "../config.ts";
+import { logDebug, requireJwtSecret } from "../config.ts";
 import { flagString } from "../parse-args.ts";
 import type { ParsedArgs } from "../parse-args.ts";
 
@@ -31,16 +32,28 @@ export async function runServerStart(
     workspacesRoot: config.workspacesRoot,
   });
 
-  let unwiredStub: (() => void) | undefined;
+  let unwiredAgents: (() => void) | undefined;
+  const engineUrl = `http://${host}:${port}`;
   if (process.env.ASF_USE_STUB_AGENTS === "1") {
-    unwiredStub = wireStubAgentRuntime(instance.engine);
+    unwiredAgents = wireStubAgentRuntime(instance.engine);
     logDebug(config, "Stub agent runtime enabled (ASF_USE_STUB_AGENTS=1)");
+  } else {
+    unwiredAgents = wireAgentRuntimeCaller(instance.engine, {
+      jwtSecret: requireJwtSecret(),
+      engineUrl,
+    });
+    logDebug(
+      config,
+      process.env.ASF_AGENT_RUN_DRY_RUN === "0"
+        ? "Subprocess agent runtime (live — M3+)"
+        : "Subprocess agent runtime (dry-run — M2)",
+    );
   }
 
   console.log(`Listening on http://${instance.hostname}:${instance.port}`);
 
   const shutdown = () => {
-    unwiredStub?.();
+    unwiredAgents?.();
     instance.stop();
     process.exit(0);
   };

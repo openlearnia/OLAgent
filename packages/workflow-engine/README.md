@@ -2,7 +2,7 @@
 
 Local workflow engine proving the ASF state machine, planner merge, merge gates, and healing paths — **no LLM**.
 
-> **Agent execution (target):** The engine emits `task.scheduled` events and expects an **Agent Runtime caller** to spawn `asf agent run` subprocesses per assignment. The CRM simulation today uses `StubAgentRuntime` in-process; set `ASF_USE_STUB_AGENTS=1` for CI without LLM. See [docs/agent-runtime.md](../../docs/agent-runtime.md) and [docs/cli-reference.md](../../docs/cli-reference.md).
+> **Agent execution (M2):** `asf server start` wires `wireAgentRuntimeCaller` by default — spawns `asf agent run --dry-run` on each `task.scheduled` event. Set `ASF_USE_STUB_AGENTS=1` for in-process stub (CI fast path). Context bundles land in `{workspace}/.asf/bundles/{taskExecutionId}.json`. See [docs/agent-runtime.md](../../docs/agent-runtime.md).
 
 ## Quick start
 
@@ -18,6 +18,9 @@ bun test packages/workflow-engine
 |------|----------|
 | Workflow engine (SQLite, state table §5.2) | `packages/workflow-engine/src/engine/` |
 | Stub agents (golden `AgentResult`) | `packages/workflow-engine/src/agents/stub.ts` |
+| Agent Runtime Caller (subprocess) | `packages/workflow-engine/src/agents/caller.ts` |
+| Context bundle builder | `packages/workflow-engine/src/agents/bundle.ts` |
+| `asf agent run --dry-run` | `packages/asf-cli/src/commands/agent/run.ts` |
 | CRM DAG simulation | `packages/workflow-engine/src/simulations/crm-mission.ts` |
 | Schema validation (Zod) | `packages/workflow-engine/src/schemas/validators.ts` |
 | E2E tests | `packages/workflow-engine/tests/` |
