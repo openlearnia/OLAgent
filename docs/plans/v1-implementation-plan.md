@@ -64,7 +64,7 @@ setup-repo → schema-migration → [implement-backend ∥ implement-frontend] �
 | Agent Runtime Caller | **M2 done** — subprocess `asf agent run --dry-run` |
 | `asf agent run` LLM pilot | **M3 done** — interim; **fallback/CI only** after ADR-003 |
 | MCP Proxy | **M4 done** — filesystem jail, git denylist, terminal allowlist, audit log |
-| Cursor ACP client | **M5a** — `packages/acp-client` (not started) |
+| Cursor ACP client | **M5a** — `packages/acp-client` ✅ Done (`8578658`) |
 | Caller → `agent acp` | **M5b** — production spawn path (not started) |
 
 ### 2.1 Engine APIs already implemented
@@ -182,7 +182,7 @@ flowchart LR
 | **M2** | Agent Runtime Caller | 4–6 days | ✅ Done — subprocess `asf agent run --dry-run` on `task.scheduled` |
 | **M3** | `asf agent run` + LLM pilot | 7–10 days | ✅ Done — interim path; fallback/CI per [ADR-003](../ADR-003-cursor-acp-primary-backend.md) |
 | **M4** | MCP Proxy + sandbox | 7–10 days | ✅ Done — filesystem jail + git denylist enforced |
-| **M5a** | `packages/acp-client` | 5–7 days | ACP JSON-RPC lifecycle + fs/terminal/permission → MCP proxy |
+| **M5a** | `packages/acp-client` | 5–7 days | ✅ Done — JSON-RPC lifecycle + fs/terminal/permission → MCP (`8578658`) |
 | **M5b** | Caller → `agent acp` | 4–6 days | Live `backend-engineer` via Cursor on operator Mac |
 | **M5c** | CRM E2E + verification | 10–14 days | Reference CRM `SUCCESS`; Cursor on pilot types, stubs in CI |
 
