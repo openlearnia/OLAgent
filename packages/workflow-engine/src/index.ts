@@ -7,6 +7,7 @@ export { deriveMissionStatus } from "./engine/mission-status.ts";
 export { mergePlanIntoDag } from "./engine/planner-merge.ts";
 export { StubAgentRuntime } from "./agents/stub.ts";
 export { wireStubAgentRuntime } from "./agents/stub-caller.ts";
+export { mintExecutionToken } from "./agents/token.ts";
 export { wireAgentRuntimeCaller } from "./agents/caller.ts";
 export {
   buildContextBundle,

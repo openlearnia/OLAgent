@@ -13,6 +13,21 @@ import { buildAgentRunArgv } from "./resolve-binary.ts";
 import { mintExecutionToken } from "./token.ts";
 import { validateAgentResult } from "../schemas/validators.ts";
 
+function resolvePilotAgentTypes(): Set<string> {
+  const raw = process.env.ASF_LLM_AGENT_TYPES ?? "backend-engineer";
+  return new Set(
+    raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+}
+
+function shouldSpawnLive(agentType: string, globalDryRun: boolean): boolean {
+  if (globalDryRun) return false;
+  return resolvePilotAgentTypes().has(agentType);
+}
+
 export interface AgentRuntimeCallerOptions {
   engineUrl?: string;
   jwtSecret: string;
@@ -27,6 +42,8 @@ interface ActiveChild {
 /**
  * Subprocess Agent Runtime Caller — spawns `asf agent run` on `task.scheduled`.
  * M2: dry-run by default (`ASF_AGENT_RUN_DRY_RUN` !== "0"); caller POSTs completeTask.
+ * M3: pilot types (`ASF_LLM_AGENT_TYPES`, default backend-engineer) spawn live;
+ *     agent POSTs completeTask on success; caller only completes on dry-run or failure.
  */
 export function wireAgentRuntimeCaller(
   engine: WorkflowEngine,
@@ -101,7 +118,8 @@ export function wireAgentRuntimeCaller(
         });
 
         const bundlePath = await writeContextBundle(bundle);
-        const argv = buildAgentRunArgv(bundlePath, { dryRun });
+        const taskDryRun = !shouldSpawnLive(task.assignedAgentType, dryRun);
+        const argv = buildAgentRunArgv(bundlePath, { dryRun: taskDryRun });
 
         const proc = Bun.spawn({
           cmd: argv,
@@ -109,6 +127,7 @@ export function wireAgentRuntimeCaller(
             ...process.env,
             ASF_ENGINE_URL: engineUrl,
             ASF_INTERNAL_JWT_SECRET: options.jwtSecret,
+            ...(taskDryRun ? {} : { ASF_AGENT_RUN_DRY_RUN: "0" }),
           },
           stdout: "pipe",
           stderr: "pipe",
@@ -141,14 +160,17 @@ export function wireAgentRuntimeCaller(
         }
 
         if (exitCode === 0) {
-          const resultRaw = await readFile(bundle.resultPath, "utf8");
-          const result = validateAgentResult(JSON.parse(resultRaw));
-          const idempotencyKey = `agent-run:${execution.id}:${hashPayload(result)}`;
-          engine.completeTask(execution.id, {
-            idempotencyKey,
-            agentId: execution.agentId,
-            result,
-          });
+          if (taskDryRun) {
+            const resultRaw = await readFile(bundle.resultPath, "utf8");
+            const result = validateAgentResult(JSON.parse(resultRaw));
+            const idempotencyKey = `agent-run:${execution.id}:${hashPayload(result)}`;
+            engine.completeTask(execution.id, {
+              idempotencyKey,
+              agentId: execution.agentId,
+              result,
+            });
+          }
+          // Live pilot: agent already POSTed completeTask — caller does not double-complete
         } else {
           const failureResult: AgentResult = {
             status: "FAILED",

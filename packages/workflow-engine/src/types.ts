@@ -76,6 +76,10 @@ export interface AgentResult {
     recoverable: boolean;
     classification?: string;
   };
+  metrics?: {
+    tokenUsage: { input: number; output: number };
+    durationMs: number;
+  };
 }
 
 export interface TaskExecution {

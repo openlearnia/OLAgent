@@ -14,6 +14,15 @@ export const AgentResultSchema = z.object({
       classification: z.string().optional(),
     })
     .optional(),
+  metrics: z
+    .object({
+      tokenUsage: z.object({
+        input: z.number(),
+        output: z.number(),
+      }),
+      durationMs: z.number(),
+    })
+    .optional(),
 });
 
 export const PlannedTaskSchema = z.object({

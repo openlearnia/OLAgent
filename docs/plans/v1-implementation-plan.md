@@ -61,6 +61,7 @@ setup-repo → schema-migration → [implement-backend ∥ implement-frontend] �
 | `asf` CLI | **M1 done** — `packages/asf-cli` |
 | Mission Manager `POST /v1/missions` | **M1 done** |
 | Agent Runtime Caller | **M2 done** — subprocess `asf agent run --dry-run` |
+| `asf agent run` LLM pilot | **M3 done** — `backend-engineer` live + heartbeat + mock/real LLM |
 | MCP Proxy | **Not implemented** |
 
 ### 2.1 Engine APIs already implemented
@@ -171,7 +172,7 @@ flowchart LR
 | **M0** | Engine hardening | 3–5 days | ✅ Done (`4d2745d`) — sweeper, event bus, `POST /v1/missions`, 15 tests |
 | **M1** | CLI + Mission Manager | 5–7 days | ✅ Done (`e9c02c1`) — `packages/asf-cli`, create → start → watch SUCCESS |
 | **M2** | Agent Runtime Caller | 4–6 days | ✅ Done — subprocess `asf agent run --dry-run` on `task.scheduled` |
-| **M3** | `asf agent run` + LLM pilot | 7–10 days | One agent type real LLM task completes |
+| **M3** | `asf agent run` + LLM pilot | 7–10 days | ✅ Done — `backend-engineer` live pilot with heartbeat + mock/real LLM |
 | **M4** | MCP Proxy + sandbox | 7–10 days | Filesystem jail + git denylist enforced |
 | **M5** | CRM E2E + verification | 10–14 days | Reference CRM `SUCCESS` with mixed stub/real agents |
 

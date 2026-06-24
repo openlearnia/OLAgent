@@ -7,6 +7,8 @@ import type { CliConfig } from "../../config.ts";
 import { logDebug } from "../../config.ts";
 import { flagBool, flagString } from "../../parse-args.ts";
 import type { ParsedArgs } from "../../parse-args.ts";
+import { runBackendEngineerPilot } from "../../agent-runtime/backend-engineer.ts";
+import { isPilotAgentType, resolveLlmConfig } from "../../agent-runtime/llm-config.ts";
 
 export async function runAgentRun(
   config: CliConfig,
@@ -35,6 +37,55 @@ export async function runAgentRun(
   }
 
   const { context, agentType, contractVersion, taskExecutionId } = bundle;
+  const useLivePilot =
+    !dryRun && agentType === "backend-engineer" && isPilotAgentType(agentType);
+
+  if (dryRun || !useLivePilot) {
+    return runDryRunStub(config, bundle, {
+      agentType,
+      contractVersion,
+      taskExecutionId,
+      context,
+      dryRun,
+      useLivePilot,
+    });
+  }
+
+  const llmConfig = resolveLlmConfig();
+  if ("error" in llmConfig) {
+    console.error(llmConfig.error);
+    return 2;
+  }
+
+  logDebug(config, "backend-engineer live pilot", {
+    task: context.task.id,
+    mock: llmConfig.mock,
+    provider: llmConfig.provider,
+  });
+
+  return runBackendEngineerPilot({ bundle, config: llmConfig });
+}
+
+async function runDryRunStub(
+  config: CliConfig,
+  bundle: ReturnType<typeof validateContextBundle>,
+  meta: {
+    agentType: string;
+    contractVersion: string;
+    taskExecutionId: string;
+    context: (typeof bundle)["context"];
+    dryRun: boolean;
+    useLivePilot: boolean;
+  },
+): Promise<number> {
+  const { agentType, contractVersion, taskExecutionId, context, dryRun } =
+    meta;
+
+  if (!dryRun && !meta.useLivePilot) {
+    console.log(
+      `Non-pilot agent ${agentType}: using dry-run stub (set ASF_LLM_AGENT_TYPES to enable live)`,
+    );
+  }
 
   if (dryRun) {
     console.log(
@@ -68,10 +119,7 @@ export async function runAgentRun(
   if (dryRun) {
     console.log(`  result: ${result.status} — ${result.summary}`);
     console.log(`  wrote: ${bundle.resultPath}`);
-    return 0;
   }
 
-  // M3: LLM loop + completeTask POST
-  console.error("Real agent execution not implemented (M3). Use --dry-run.");
-  return 1;
+  return 0;
 }
