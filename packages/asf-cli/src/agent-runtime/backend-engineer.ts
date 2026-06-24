@@ -1,4 +1,3 @@
-import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import type { ContextBundle } from "@olagent/workflow-engine";
 import type { FetchFn } from "./heartbeat.ts";
@@ -11,6 +10,7 @@ import {
 import { startHeartbeatLoop } from "./heartbeat.ts";
 import { postCompleteTask } from "./complete.ts";
 import { enterWorkspaceSandbox } from "./sandbox.ts";
+import { connectMcpSession } from "./mcp.ts";
 
 export interface RunBackendEngineerOptions {
   bundle: ContextBundle;
@@ -28,6 +28,7 @@ export async function runBackendEngineerPilot(
   const startedAt = Date.now();
   let sandbox: ReturnType<typeof enterWorkspaceSandbox> | undefined;
   let heartbeat: ReturnType<typeof startHeartbeatLoop> | undefined;
+  let mcp: Awaited<ReturnType<typeof connectMcpSession>> | undefined;
   let leaseLost = false;
 
   const fail = async (code: string, message: string, recoverable: boolean) => {
@@ -45,6 +46,7 @@ export async function runBackendEngineerPilot(
 
   try {
     sandbox = enterWorkspaceSandbox(bundle.context.workspace);
+    mcp = await connectMcpSession(bundle, options.fetchFn);
     heartbeat = startHeartbeatLoop({
       engineUrl: bundle.engineUrl,
       taskExecutionId: bundle.taskExecutionId,
@@ -66,10 +68,9 @@ export async function runBackendEngineerPilot(
     }
 
     const relativePath = generation.filePath.replace(/^\.\//, "");
-    const absolutePath = path.join(bundle.context.workspace, relativePath);
-    await mkdir(path.dirname(absolutePath), { recursive: true });
-    await Bun.write(absolutePath, generation.content);
+    await mcp.writeFile(relativePath, generation.content);
 
+    const absolutePath = path.join(bundle.context.workspace, relativePath);
     const exists = await Bun.file(absolutePath).exists();
     if (!exists) {
       return fail("ARTIFACT_MISSING", `Output file not found: ${relativePath}`, false);

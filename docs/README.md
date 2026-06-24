@@ -70,4 +70,6 @@ Re-run five-lens review after Workflow Engine + CRM DAG simulation (no LLM).
 4. **Workflow engine on Mac** — `packages/workflow-engine` Bun server + SQLite (**M0 done**)
 5. **Operator CLI** — `packages/asf-cli` (`bun run asf`) — create → start → watch (**M1 done**)
 6. **Agent Runtime Caller** — `task.scheduled` → `asf agent run` subprocess (**M2 done**)
-7. **Core implementation** — real LLM pilot + MCP → reference CRM E2E ([v1 plan](./plans/v1-implementation-plan.md))
+7. **LLM pilot** — `backend-engineer` live agent run + heartbeat (**M3 done**)
+8. **MCP proxy + sandbox** — filesystem jail, tool allowlists (**M4 done**)
+9. **CRM E2E** — reference mission SUCCESS with verification ([v1 plan](./plans/v1-implementation-plan.md))

@@ -62,6 +62,8 @@ describe("context bundle builder", () => {
     expect(bundle.timeoutMs).toBe(
       getAgentContract("requirement-discovery").timeoutMs,
     );
+    expect(bundle.mcpEndpoint).toContain("/mcp");
+    expect(bundle.sessionId).toBe("te-abc123");
   });
 
   test("bundle omits platform JWT secret from context", () => {

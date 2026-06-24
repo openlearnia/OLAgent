@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { createMcpProxyServer } from "@olagent/mcp-proxy";
 import {
   createWorkflowServer,
   mintExecutionToken,
@@ -12,12 +13,15 @@ import { runCli } from "../src/cli.ts";
 
 const TEST_SECRET = "test-pilot-jwt-secret";
 let server: WorkflowServer | null = null;
+let mcpServer: ReturnType<typeof createMcpProxyServer> | null = null;
 let tempRoot: string | null = null;
 let prevEnv: Record<string, string | undefined> = {};
 
 afterEach(async () => {
   server?.stop();
   server = null;
+  mcpServer?.stop();
+  mcpServer = null;
   if (tempRoot) {
     await rm(tempRoot, { recursive: true, force: true });
     tempRoot = null;
@@ -40,6 +44,9 @@ async function startMockPilotEngine() {
   const workspacesRoot = path.join(tempRoot, "workspaces");
   const dbPath = path.join(tempRoot, "workflow.db");
 
+  mcpServer = createMcpProxyServer({ port: 0 });
+  const mcpEndpoint = mcpServer.url;
+
   server = createWorkflowServer({
     port: 0,
     jwtSecret: TEST_SECRET,
@@ -52,6 +59,7 @@ async function startMockPilotEngine() {
     jwtSecret: TEST_SECRET,
     engineUrl: `http://127.0.0.1:${server.port}`,
     dryRun: false,
+    mcpEndpoint,
   });
 
   stashEnv("ASF_INTERNAL_JWT_SECRET", TEST_SECRET);
@@ -62,8 +70,9 @@ async function startMockPilotEngine() {
   stashEnv("ASF_AGENT_RUN_DRY_RUN", "0");
   stashEnv("ASF_LLM_MOCK", "1");
   stashEnv("ASF_LLM_AGENT_TYPES", "backend-engineer");
+  stashEnv("ASF_MCP_ENDPOINT", mcpEndpoint);
 
-  return { workspacesRoot };
+  return { workspacesRoot, mcpEndpoint };
 }
 
 const REPO_ROOT = path.resolve(import.meta.dir, "../../..");
@@ -114,6 +123,9 @@ describe("backend-engineer LLM pilot (ASF_LLM_MOCK=1)", () => {
     const workspace = path.join(tempRoot, "workspace");
     await Bun.write(path.join(workspace, ".keep"), "");
 
+    mcpServer = createMcpProxyServer({ port: 0 });
+    const mcpEndpoint = mcpServer.url;
+
     server = createWorkflowServer({
       port: 0,
       jwtSecret: TEST_SECRET,
@@ -126,6 +138,7 @@ describe("backend-engineer LLM pilot (ASF_LLM_MOCK=1)", () => {
     stashEnv("ASF_LLM_MOCK", "1");
     stashEnv("ASF_AGENT_RUN_DRY_RUN", "0");
     stashEnv("ASF_WORKSPACES_ROOT", tempRoot);
+    stashEnv("ASF_MCP_ENDPOINT", mcpEndpoint);
 
     const mission = server.engine.createMission({
       id: "m-pilot",
@@ -162,10 +175,12 @@ describe("backend-engineer LLM pilot (ASF_LLM_MOCK=1)", () => {
     const bundle = {
       version: "1.0",
       taskExecutionId: running!.id,
+      sessionId: running!.id,
       agentId: running!.agentId,
       agentType: "backend-engineer",
       contractVersion: "1.0.0",
       engineUrl: `http://127.0.0.1:${server.port}`,
+      mcpEndpoint,
       executionToken,
       timeoutMs: 3_600_000,
       resultPath,
@@ -192,6 +207,9 @@ describe("backend-engineer LLM pilot (ASF_LLM_MOCK=1)", () => {
 
     const artifact = path.join(workspace, "packages/api/src/routes/contacts.ts");
     expect(await Bun.file(artifact).exists()).toBe(true);
+
+    const auditPath = path.join(workspace, ".asf", "audit", `${running!.id}.jsonl`);
+    expect(await Bun.file(auditPath).exists()).toBe(true);
 
     const execution = server.engine.getStore().getExecution(running!.id);
     expect(execution?.status).toBe("SUCCESS");

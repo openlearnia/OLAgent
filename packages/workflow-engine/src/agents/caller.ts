@@ -32,6 +32,7 @@ export interface AgentRuntimeCallerOptions {
   engineUrl?: string;
   jwtSecret: string;
   dryRun?: boolean;
+  mcpEndpoint?: string;
 }
 
 interface ActiveChild {
@@ -56,6 +57,10 @@ export function wireAgentRuntimeCaller(
   const dryRun =
     options.dryRun ??
     (process.env.ASF_AGENT_RUN_DRY_RUN !== "0");
+  const mcpEndpoint =
+    options.mcpEndpoint ??
+    process.env.ASF_MCP_ENDPOINT ??
+    `http://127.0.0.1:${process.env.ASF_MCP_PORT ?? "3101"}/mcp`;
   const activeChildren = new Map<string, ActiveChild>();
 
   const killAll = () => {
@@ -115,6 +120,7 @@ export function wireAgentRuntimeCaller(
           engineUrl,
           executionToken: token,
           contractVersion,
+          mcpEndpoint,
         });
 
         const bundlePath = await writeContextBundle(bundle);

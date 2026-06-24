@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@olagent/mcp-proxy": "workspace:*",
     "@olagent/workflow-engine": "workspace:*"
   },
   "devDependencies": {

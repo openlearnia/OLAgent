@@ -40,10 +40,12 @@ export const AgentContextSchema = z.object({
 export const ContextBundleSchema = z.object({
   version: z.literal("1.0"),
   taskExecutionId: z.string(),
+  sessionId: z.string().optional(),
   agentId: z.string(),
   agentType: z.string(),
   contractVersion: z.string(),
   engineUrl: z.string().url(),
+  mcpEndpoint: z.string().url().optional(),
   executionToken: z.string(),
   timeoutMs: z.number().int().positive(),
   resultPath: z.string(),
@@ -60,6 +62,7 @@ export interface BuildContextBundleInput {
   engineUrl: string;
   executionToken: string;
   contractVersion?: string;
+  mcpEndpoint?: string;
 }
 
 export async function loadMissionContractVersions(
@@ -93,13 +96,20 @@ export function buildContextBundle(
   const bundlePath = path.join(bundleDir, `${input.execution.id}.json`);
   const resultPath = path.join(bundleDir, `${input.execution.id}.result.json`);
 
+  const mcpEndpoint =
+    input.mcpEndpoint ??
+    process.env.ASF_MCP_ENDPOINT ??
+    `http://127.0.0.1:${process.env.ASF_MCP_PORT ?? "3101"}/mcp`;
+
   return ContextBundleSchema.parse({
     version: "1.0",
     taskExecutionId: input.execution.id,
+    sessionId: input.execution.id,
     agentId: input.execution.agentId ?? "",
     agentType: input.task.assignedAgentType,
     contractVersion: pinned,
     engineUrl: input.engineUrl,
+    mcpEndpoint,
     executionToken: input.executionToken,
     timeoutMs: contract.timeoutMs,
     resultPath,

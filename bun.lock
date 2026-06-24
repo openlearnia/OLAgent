@@ -12,8 +12,17 @@
         "asf": "./src/main.ts",
       },
       "dependencies": {
+        "@olagent/mcp-proxy": "workspace:*",
         "@olagent/workflow-engine": "workspace:*",
       },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.8.2",
+      },
+    },
+    "packages/mcp-proxy": {
+      "name": "@olagent/mcp-proxy",
+      "version": "0.1.0",
       "devDependencies": {
         "@types/bun": "latest",
         "typescript": "^5.8.2",
@@ -33,6 +42,8 @@
   },
   "packages": {
     "@olagent/asf-cli": ["@olagent/asf-cli@workspace:packages/asf-cli"],
+
+    "@olagent/mcp-proxy": ["@olagent/mcp-proxy@workspace:packages/mcp-proxy"],
 
     "@olagent/workflow-engine": ["@olagent/workflow-engine@workspace:packages/workflow-engine"],
 
