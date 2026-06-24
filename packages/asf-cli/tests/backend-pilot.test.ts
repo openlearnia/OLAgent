@@ -70,6 +70,7 @@ async function startMockPilotEngine() {
   stashEnv("ASF_AGENT_RUN_DRY_RUN", "0");
   stashEnv("ASF_LLM_MOCK", "1");
   stashEnv("ASF_LLM_AGENT_TYPES", "backend-engineer");
+  stashEnv("ASF_AGENT_BACKEND", "custom-llm");
   stashEnv("ASF_MCP_ENDPOINT", mcpEndpoint);
 
   return { workspacesRoot, mcpEndpoint };

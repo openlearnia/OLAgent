@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import type { Subprocess } from "bun";
 import type { WorkflowEngine } from "../engine/engine.ts";
 import { hashPayload } from "../engine/db.ts";
@@ -12,27 +13,19 @@ import {
 import { buildAgentRunArgv } from "./resolve-binary.ts";
 import { mintExecutionToken } from "./token.ts";
 import { validateAgentResult } from "../schemas/validators.ts";
-
-function resolvePilotAgentTypes(): Set<string> {
-  const raw = process.env.ASF_LLM_AGENT_TYPES ?? "backend-engineer";
-  return new Set(
-    raw
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean),
-  );
-}
-
-function shouldSpawnLive(agentType: string, globalDryRun: boolean): boolean {
-  if (globalDryRun) return false;
-  return resolvePilotAgentTypes().has(agentType);
-}
+import { resolveTaskBackend } from "./backend.ts";
+import { mapAcpSessionToAgentResult } from "./acp-result.ts";
+import { spawnCursorAcpSession } from "./spawn-acp.ts";
 
 export interface AgentRuntimeCallerOptions {
   engineUrl?: string;
   jwtSecret: string;
   dryRun?: boolean;
   mcpEndpoint?: string;
+  /** Test override for Cursor agent binary (default: `ASF_CURSOR_AGENT_BIN` or `agent`). */
+  acpAgentBin?: string;
+  acpAgentArgs?: string[];
+  acpOptions?: import("@olagent/acp-client").RunCursorAcpSessionOptions;
 }
 
 interface ActiveChild {
@@ -41,10 +34,11 @@ interface ActiveChild {
 }
 
 /**
- * Subprocess Agent Runtime Caller — spawns `asf agent run` on `task.scheduled`.
- * M2: dry-run by default (`ASF_AGENT_RUN_DRY_RUN` !== "0"); caller POSTs completeTask.
- * M3: pilot types (`ASF_LLM_AGENT_TYPES`, default backend-engineer) spawn live;
- *     agent POSTs completeTask on success; caller only completes on dry-run or failure.
+ * Subprocess Agent Runtime Caller — routes tasks by backend resolver on `task.scheduled`.
+ *
+ * - **cursor-acp** (M5b): `agent acp` via `@olagent/acp-client`; caller POSTs completeTask.
+ * - **custom-llm** (M3 fallback): live `asf agent run` for pilot types; agent POSTs completeTask.
+ * - **dry-run** (M2): `asf agent run --dry-run`; caller POSTs completeTask from bundle result.
  */
 export function wireAgentRuntimeCaller(
   engine: WorkflowEngine,
@@ -54,7 +48,7 @@ export function wireAgentRuntimeCaller(
     options.engineUrl ??
     process.env.ASF_ENGINE_URL ??
     `http://127.0.0.1:${process.env.PORT ?? 3100}`;
-  const dryRun =
+  const globalDryRun =
     options.dryRun ??
     (process.env.ASF_AGENT_RUN_DRY_RUN !== "0");
   const mcpEndpoint =
@@ -72,6 +66,20 @@ export function wireAgentRuntimeCaller(
       }
     }
     activeChildren.clear();
+  };
+
+  const completeFromResult = (
+    taskExecutionId: string,
+    agentId: string | undefined,
+    result: AgentResult,
+    keyPrefix: string,
+  ) => {
+    const idempotencyKey = `${keyPrefix}:${taskExecutionId}:${hashPayload(result)}`;
+    engine.completeTask(taskExecutionId, {
+      idempotencyKey,
+      agentId,
+      result,
+    });
   };
 
   const handleScheduled = async (event: WorkflowEvent) => {
@@ -96,6 +104,10 @@ export function wireAgentRuntimeCaller(
 
       const mission = store.getMission(event.missionId);
       if (!mission) return;
+
+      const route = resolveTaskBackend(task.assignedAgentType, {
+        dryRun: globalDryRun,
+      });
 
       try {
         const contractVersions = await loadMissionContractVersions(
@@ -124,7 +136,34 @@ export function wireAgentRuntimeCaller(
         });
 
         const bundlePath = await writeContextBundle(bundle);
-        const taskDryRun = !shouldSpawnLive(task.assignedAgentType, dryRun);
+
+        if (route.backend === "cursor-acp" && !route.dryRun) {
+          await mkdir(bundle.context.workspace, { recursive: true });
+
+          const session = await spawnCursorAcpSession(bundle, {
+            engineUrl,
+            executionToken: token,
+            agentBin: options.acpAgentBin,
+            agentArgs: options.acpAgentArgs,
+            acpOptions: options.acpOptions,
+          });
+
+          const stillRunning = store.getExecution(execution.id);
+          if (!stillRunning || stillRunning.status !== "RUNNING") {
+            return;
+          }
+
+          const result = mapAcpSessionToAgentResult(session);
+          completeFromResult(
+            execution.id,
+            execution.agentId,
+            result,
+            "acp-session",
+          );
+          return;
+        }
+
+        const taskDryRun = route.dryRun;
         const argv = buildAgentRunArgv(bundlePath, { dryRun: taskDryRun });
 
         const proc = Bun.spawn({
@@ -169,14 +208,14 @@ export function wireAgentRuntimeCaller(
           if (taskDryRun) {
             const resultRaw = await readFile(bundle.resultPath, "utf8");
             const result = validateAgentResult(JSON.parse(resultRaw));
-            const idempotencyKey = `agent-run:${execution.id}:${hashPayload(result)}`;
-            engine.completeTask(execution.id, {
-              idempotencyKey,
-              agentId: execution.agentId,
+            completeFromResult(
+              execution.id,
+              execution.agentId,
               result,
-            });
+              "agent-run",
+            );
           }
-          // Live pilot: agent already POSTed completeTask — caller does not double-complete
+          // Live custom-llm: agent already POSTed completeTask — caller does not double-complete
         } else {
           const failureResult: AgentResult = {
             status: "FAILED",
@@ -189,11 +228,12 @@ export function wireAgentRuntimeCaller(
               recoverable: exitCode !== 1,
             },
           };
-          engine.completeTask(execution.id, {
-            idempotencyKey: `agent-run-fail:${execution.id}:${exitCode}`,
-            agentId: execution.agentId,
-            result: failureResult,
-          });
+          completeFromResult(
+            execution.id,
+            execution.agentId,
+            failureResult,
+            `agent-run-fail:${exitCode}`,
+          );
         }
       } catch (error) {
         console.error(
@@ -203,10 +243,10 @@ export function wireAgentRuntimeCaller(
         const stillRunning = store.getExecution(item.taskExecutionId);
         if (stillRunning?.status === "RUNNING") {
           try {
-            engine.completeTask(item.taskExecutionId, {
-              idempotencyKey: `agent-run-error:${item.taskExecutionId}`,
-              agentId: stillRunning.agentId,
-              result: {
+            completeFromResult(
+              item.taskExecutionId,
+              stillRunning.agentId,
+              {
                 status: "FAILED",
                 artifacts: [],
                 commits: [],
@@ -217,7 +257,8 @@ export function wireAgentRuntimeCaller(
                   recoverable: true,
                 },
               },
-            });
+              "agent-run-error",
+            );
           } catch {
             // execution may have transitioned
           }

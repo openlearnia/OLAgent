@@ -44,9 +44,11 @@
       "name": "@olagent/workflow-engine",
       "version": "0.1.0",
       "dependencies": {
+        "@olagent/acp-client": "workspace:*",
         "zod": "^3.24.2",
       },
       "devDependencies": {
+        "@olagent/mcp-proxy": "workspace:*",
         "@types/bun": "latest",
         "typescript": "^5.8.2",
       },

@@ -10,6 +10,14 @@ export { wireStubAgentRuntime } from "./agents/stub-caller.ts";
 export { mintExecutionToken } from "./agents/token.ts";
 export { wireAgentRuntimeCaller } from "./agents/caller.ts";
 export {
+  resolveAgentBackend,
+  resolveCursorAgentTypes,
+  resolveTaskBackend,
+} from "./agents/backend.ts";
+export type { AgentBackend, BackendResolution } from "./agents/backend.ts";
+export { mapAcpSessionToAgentResult } from "./agents/acp-result.ts";
+export { spawnCursorAcpSession } from "./agents/spawn-acp.ts";
+export {
   buildContextBundle,
   validateContextBundle,
   writeContextBundle,

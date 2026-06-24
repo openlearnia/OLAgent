@@ -46,6 +46,6 @@ Optional live smoke:
 CURSOR_API_KEY=... bun run packages/acp-client/scripts/acp-smoke.ts
 ```
 
-## M5b (not in this package yet)
+## Caller integration (M5b)
 
-Agent Runtime Caller wiring (`runCursorAcpSession` from `caller.ts`) lands in M5b.
+Production wiring lives in `@olagent/workflow-engine`: `wireAgentRuntimeCaller` routes types in `ASF_CURSOR_AGENT_TYPES` to `spawnCursorAcpSession` → `runCursorAcpSession` from this package. Set `ASF_AGENT_BACKEND=cursor-acp` (default) and `ASF_AGENT_RUN_DRY_RUN=0` for live Cursor sessions.

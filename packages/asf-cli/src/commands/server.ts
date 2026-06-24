@@ -52,12 +52,12 @@ export async function runServerStart(
       engineUrl,
       mcpEndpoint,
     });
-    logDebug(
-      config,
+    const backend = process.env.ASF_AGENT_BACKEND ?? "cursor-acp";
+    const live =
       process.env.ASF_AGENT_RUN_DRY_RUN === "0"
-        ? "Subprocess agent runtime (live — M3+)"
-        : "Subprocess agent runtime (dry-run — M2)",
-    );
+        ? `live (${backend})`
+        : "dry-run (M2)";
+    logDebug(config, `Subprocess agent runtime — ${live}`);
   }
 
   console.log(`Listening on http://${instance.hostname}:${instance.port}`);

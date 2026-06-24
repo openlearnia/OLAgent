@@ -65,7 +65,7 @@ setup-repo → schema-migration → [implement-backend ∥ implement-frontend] �
 | `asf agent run` LLM pilot | **M3 done** — interim; **fallback/CI only** after ADR-003 |
 | MCP Proxy | **M4 done** — filesystem jail, git denylist, terminal allowlist, audit log |
 | Cursor ACP client | **M5a** — `packages/acp-client` ✅ Done (`8578658`) |
-| Caller → `agent acp` | **M5b** — production spawn path (not started) |
+| Caller → `agent acp` | **M5b** — `workflow-engine` caller + `@olagent/acp-client` ✅ Done |
 
 ### 2.1 Engine APIs already implemented
 
@@ -183,7 +183,7 @@ flowchart LR
 | **M3** | `asf agent run` + LLM pilot | 7–10 days | ✅ Done — interim path; fallback/CI per [ADR-003](../ADR-003-cursor-acp-primary-backend.md) |
 | **M4** | MCP Proxy + sandbox | 7–10 days | ✅ Done — filesystem jail + git denylist enforced |
 | **M5a** | `packages/acp-client` | 5–7 days | ✅ Done — JSON-RPC lifecycle + fs/terminal/permission → MCP (`8578658`) |
-| **M5b** | Caller → `agent acp` | 4–6 days | Live `backend-engineer` via Cursor on operator Mac |
+| **M5b** | Caller → `agent acp` | 4–6 days | ✅ Done — `resolveTaskBackend`, `spawnCursorAcpSession`, mock `acp-caller.test.ts` |
 | **M5c** | CRM E2E + verification | 10–14 days | Reference CRM `SUCCESS`; Cursor on pilot types, stubs in CI |
 
 > **M4.5 alias:** Some references use M4.5 for M5a — same scope (`acp-client` package).  
@@ -373,12 +373,16 @@ Full task list: [cursor-acp-milestones.md](./cursor-acp-milestones.md#m5a--packa
 | M5b.6 Pilot gating | `caller.ts` | `ASF_CURSOR_AGENT_TYPES=backend-engineer` |
 | M5b.7 Integration test | `agent-runtime/tests/acp-caller.test.ts` | Mock `agent` binary |
 
+**Status:** ✅ Done — `packages/workflow-engine/src/agents/{backend,spawn-acp,acp-result,heartbeat,caller}.ts`; `packages/workflow-engine/tests/acp-caller.test.ts`.
+
 **Verification:**
 
 ```bash
+bun test packages/workflow-engine/tests/acp-caller.test.ts
 export CURSOR_API_KEY=...
 export ASF_AGENT_BACKEND=cursor-acp
 export ASF_CURSOR_AGENT_TYPES=backend-engineer
+export ASF_AGENT_RUN_DRY_RUN=0
 asf server start
 # Drive mission until implement-backend SUCCESS via Cursor
 ```

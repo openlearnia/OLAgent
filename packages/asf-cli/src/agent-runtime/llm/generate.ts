@@ -3,6 +3,7 @@ import type { LlmConfig } from "../llm-config.ts";
 import { targetArtifactForTask } from "../result.ts";
 import type { FetchFn } from "../heartbeat.ts";
 
+/** @deprecated CI/fallback only — v1 production uses Cursor ACP (ADR-003, M5b). */
 export interface CodeGeneration {
   filePath: string;
   content: string;
