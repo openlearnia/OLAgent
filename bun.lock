@@ -5,6 +5,18 @@
     "": {
       "name": "olagent",
     },
+    "packages/acp-client": {
+      "name": "@olagent/acp-client",
+      "version": "0.1.0",
+      "dependencies": {
+        "@olagent/mcp-proxy": "workspace:*",
+        "@olagent/workflow-engine": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.8.2",
+      },
+    },
     "packages/asf-cli": {
       "name": "@olagent/asf-cli",
       "version": "0.1.0",
@@ -41,6 +53,8 @@
     },
   },
   "packages": {
+    "@olagent/acp-client": ["@olagent/acp-client@workspace:packages/acp-client"],
+
     "@olagent/asf-cli": ["@olagent/asf-cli@workspace:packages/asf-cli"],
 
     "@olagent/mcp-proxy": ["@olagent/mcp-proxy@workspace:packages/mcp-proxy"],

@@ -1,0 +1,18 @@
+{
+  "name": "@olagent/acp-client",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@olagent/mcp-proxy": "workspace:*",
+    "@olagent/workflow-engine": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.8.2"
+  }
+}

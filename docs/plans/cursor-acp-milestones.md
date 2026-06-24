@@ -21,7 +21,7 @@ flowchart LR
 
 | ID | Theme | Duration (est.) | Exit gate |
 |----|-------|-----------------|-----------|
-| **M5a** | `packages/acp-client` | 5–7 days | JSON-RPC lifecycle + MCP bridge green in tests |
+| **M5a** | `packages/acp-client` | 5–7 days | ✅ JSON-RPC lifecycle + MCP bridge green in tests |
 | **M5b** | Caller → `agent acp` | 4–6 days | Live `backend-engineer` task via Cursor on operator Mac |
 | **M5c** | CRM E2E + expansion | 10–14 days | Reference CRM `SUCCESS` with Cursor on pilot + stub/CI paths |
 
